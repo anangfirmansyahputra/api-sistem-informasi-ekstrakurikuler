@@ -13,6 +13,7 @@ const cors = require("cors");
 const galleryRouter = require("./routes/gallery");
 const dotenv = require("dotenv");
 const bodyParser = require("body-parser");
+const router = require('express').Router()
 
 // Import Routes
 
