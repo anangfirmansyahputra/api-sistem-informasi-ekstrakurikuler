@@ -1,5 +1,5 @@
 const router = require("express").Router();
-const Admin = require("../model/admin");
+const Admin = require("../model/Admin");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { schemaRegister, schemaLogin, schemaPengajar } = require("../validate");
