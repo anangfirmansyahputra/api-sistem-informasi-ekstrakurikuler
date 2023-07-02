@@ -33,6 +33,9 @@ app.use("/api/nilai", nilaiRoutes);
 app.use("/api/gallery", galleryRouter);
 app.use("/api/prestasi", prestasiRoutes);
 app.use('/api/matpel', matpelRoutes)
+app.get('/', (req, res) => {
+    res.send('Hello World')
+})
 
 mongoose.connect(process.env.MONGO_URL).catch((error) => console.error(error));
 
