@@ -1,25 +1,55 @@
 const mongoose = require("mongoose");
 
 const nilaiSchema = new mongoose.Schema({
-    siswa: {
-        type: mongoose.Types.ObjectId,
-        ref: "Siswa",
+    nis: {
+        type: String,
+        required: true,
     },
-    ekstrakurikuler: {
-        type: mongoose.Types.ObjectId,
-        ref: "Ekstrakurikuler",
+    ekstrakurikulerPilihan: {
+        ekstrakurikuler: {
+            type: mongoose.Types.ObjectId,
+            ref: "Ekstrakurikuler",
+            default: null
+        },
+        nilai: {
+            type: Number,
+            default: 0,
+        },
+        absen: {
+            type: Number,
+            default: 0,
+        },
+        kehadiran: {
+            type: Array,
+            default: [false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+        },
+        ijin: {
+            type: Array,
+            default: [],
+        },
     },
-    nilai: {
-        type: Number,
-        default: 0,
-    },
-    absensi: {
-        type: Number,
-        default: 0,
-    },
-    kehadiran: {
-        type: Array,
-        default: [],
+    ekstrakurikulerWajib: {
+        ekstrakurikuler: {
+            type: mongoose.Types.ObjectId,
+            ref: "Ekstrakurikuler",
+            default: null,
+        },
+        nilai: {
+            type: Number,
+            default: 0,
+        },
+        absen: {
+            type: Number,
+            default: 0,
+        },
+        kehadiran: {
+            type: Array,
+            default: [false, false, false, false, false, false, false, false, false, false, false, false, false, false]
+        },
+        ijin: {
+            type: Array,
+            default: [],
+        },
     },
 });
 

@@ -2,27 +2,21 @@ const mongoose = require("mongoose");
 
 // Definisi schema Galeri
 const gallerySchema = new mongoose.Schema({
-    idEkstrakurikuler: {
-        type: Number,
-        required: true,
+    ekstrakurikuler: {
+        type: mongoose.Types.ObjectId,
+        ref: "Ekstrakurikuler",
     },
     tanggalUpload: {
         type: Date,
         default: Date.now,
     },
-    photo: {
+    linkGallery: {
         type: String,
         required: true,
     },
-    sertifikat: {
-        idSiswa: {
-            type: Number,
-            required: true,
-        },
-        gambarSertifikat: {
-            type: String,
-            required: true,
-        },
+    description: {
+        type: String,
+        required: true,
     },
 });
 

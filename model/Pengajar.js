@@ -7,7 +7,7 @@ const pengajarSchema = new mongoose.Schema({
         required: true,
     },
     nik: {
-        type: Number,
+        type: String,
         required: true,
     },
     password: {

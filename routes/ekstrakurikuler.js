@@ -7,12 +7,13 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Siswa = require("../model/Siswa");
 const Nilai = require("../model/Nilai");
+const mongoose = require('mongoose');
 
 // Create ekstrakurikuler
 router.post("/", async (req, res) => {
     try {
         const existingEkstra = await Ekstrakurikuler.findOne({
-            nama: req.body.nama.toLowerCase(),
+            name: req.body.name.toLowerCase(),
         });
 
         if (existingEkstra) {
@@ -24,18 +25,29 @@ router.post("/", async (req, res) => {
         }
 
         const ekstrakurikuler = new Ekstrakurikuler({
-            nama: req.body.nama,
+            name: req.body.name,
             lokasi: req.body.lokasi,
             waktu: req.body.waktu,
             pengajar: req.body.pengajar,
             wajib: req.body.wajib,
+            hari: req.body.hari,
             note: req.body.note,
         });
 
         const savedEkstra = await ekstrakurikuler.save();
 
         // Mengupdate data Pengajar untuk memasukkan ID Ekstrakurikuler
-        await Pengajar.updateOne({ _id: req.body.pengajar }, { $push: { ekstrakurikuler: savedEkstra._id } });
+        const updatePengajar = await Pengajar.updateOne({ _id: req.body.pengajar }, { $push: { ekstrakurikuler: savedEkstra._id } });
+
+        if (updatePengajar.nModified === 0) {
+            // Jika tidak ada pembaruan pada data pengajar
+            await Ekstrakurikuler.findByIdAndDelete(savedEkstra._id); // Hapus ekstrakurikuler yang baru dibuat
+            return res.status(400).json({
+                success: false,
+                message: "Failed to update pengajar",
+                data: null,
+            });
+        }
 
         return res.status(200).json({
             success: true,
@@ -101,11 +113,12 @@ router.put("/:id", async (req, res) => {
         }
 
         // Update properti ekstrakurikuler
-        existingEkstra.nama = updatedEkstra.nama || existingEkstra.nama;
+        existingEkstra.name = updatedEkstra.name || existingEkstra.name;
         existingEkstra.lokasi = updatedEkstra.lokasi || existingEkstra.lokasi;
         existingEkstra.waktu = updatedEkstra.waktu || existingEkstra.waktu;
         existingEkstra.wajib = updatedEkstra.wajib;
         existingEkstra.note = updatedEkstra.note;
+        existingEkstra.hari = updatedEkstra.hari;
 
         // Update data ekstrakurikuler
         const savedEkstra = await existingEkstra.save();
@@ -125,13 +138,15 @@ router.put("/:id", async (req, res) => {
 });
 
 // Join Ekstrakurikuler
-router.post("/join/:ekstraId", async (req, res) => {
+router.post("/join", async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
     try {
-        const { ekstraId } = req.params;
-        const { nis } = req.body;
+        const { nis, ekstraId } = req.body;
 
         // Cari siswa berdasarkan ID
-        const siswa = await Siswa.findOne({ nis });
+        const siswa = await Siswa.findOne({ nis }).session(session);
 
         if (!siswa) {
             return res.status(400).json({
@@ -142,7 +157,7 @@ router.post("/join/:ekstraId", async (req, res) => {
         }
 
         // Cari ekstrakurikuler berdasarkan ID
-        const ekstrakurikuler = await Ekstrakurikuler.findById(ekstraId);
+        const ekstrakurikuler = await Ekstrakurikuler.findById(ekstraId).session(session);
         if (!ekstrakurikuler) {
             return res.status(400).json({
                 message: "Ekstrakurikuler tidak ditemukan",
@@ -151,27 +166,159 @@ router.post("/join/:ekstraId", async (req, res) => {
             });
         }
 
-        const nilai = new Nilai({
-            ekstrakurikuler: ekstraId,
-            siswa: siswa._id,
-        });
+        const nilai = await Nilai.findById(siswa.nilai).session(session)
 
-        await nilai.save();
+        if (!nilai) {
+            return res.status(400).json({
+                message: "Nilai not found!",
+                data: null,
+                success: false,
+            });
+        }
 
-        siswa.nilai.push(nilai);
-        await siswa.save();
+        if (ekstrakurikuler.wajib) {
+            nilai.ekstrakurikulerWajib.ekstrakurikuler = ekstraId;
+            await nilai.save();
+        } else {
+            nilai.ekstrakurikulerPilihan.ekstrakurikuler = ekstraId;
+            await nilai.save();
+        }
 
-        ekstrakurikuler.pendaftar.push(nilai);
+        ekstrakurikuler.pendaftar.push(siswa._id);
         await ekstrakurikuler.save();
+
+        await session.commitTransaction();
+        session.endSession();
 
         res.status(201).json({
             message: "Ekstrakurikuler berhasil ditambahkan ke Siswa",
-            // data: newEkstrakurikuler,
         });
     } catch (err) {
-        console.error(err);
+        await session.abortTransaction();
+        session.endSession();
+        console.log(err)
         res.status(500).json({ message: "Terjadi kesalahan server" });
     }
 });
+
+
+router.post("/delete", async (req, res) => {
+    const { ids } = req.body;
+
+    try {
+        // Menghapus data pengajar dengan menggunakan metode deleteMany() dari model Pengajar
+        const result = await Ekstrakurikuler.deleteMany({ _id: { $in: ids } });
+
+        if (result.deletedCount > 0) {
+            res.status(200).json({
+                message: "Data ekstrakurikuler berhasil dihapus",
+                status: "success",
+            });
+        } else {
+            res.status(404).json({
+                message: "Tidak ada data ekstrakurikuler yang dihapus",
+                status: "not found",
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            message: "Terjadi kesalahan dalam menghapus data pengajar",
+            status: "error",
+        });
+    }
+});
+
+router.post('/absensi', async (req, res) => {
+    const { listSiswa, pertemuan, ekstrakurikuler, kelas } = req.body
+
+    const session = await mongoose.startSession()
+
+    try {
+        // session.startTransaction()
+
+        const ekstrakurikulerExist = await Ekstrakurikuler.findById(ekstrakurikuler).populate('pendaftar')
+
+        if (!ekstrakurikulerExist) {
+            throw new Error("Ekstrakurikuler doesn't exist!")
+        }
+
+
+        const listPendaftar = ekstrakurikulerExist.pendaftar
+
+        for (const siswaId of listPendaftar) {
+            if (!listSiswa.includes(siswaId)) {
+                const siswa = await Siswa.findOne({
+                    _id: siswaId,
+                    kelas: kelas
+                })
+
+                if (siswa) {
+                    const nilai = await Nilai.findById(siswa.nilai)
+                    // Set kehadiran false
+                    if (ekstrakurikulerExist.wajib) {
+                        nilai.ekstrakurikulerWajib.kehadiran[pertemuan] = false
+                        let hadir = nilai.ekstrakurikulerWajib.kehadiran.filter(item => item === true).length
+                        let tidakHadir = nilai.ekstrakurikulerWajib.kehadiran.filter(item => item === false).length
+                        nilai.ekstrakurikulerWajib.absen = Number((hadir / tidakHadir) * 100)
+                    } else {
+                        nilai.ekstrakurikulerPilihan.kehadiran[pertemuan] = false
+                        let hadir = nilai.ekstrakurikulerPilihan.kehadiran.filter(item => item === true).length
+                        let tidakHadir = nilai.ekstrakurikulerPilihan.kehadiran.filter(item => item === false).length
+                        nilai.ekstrakurikulerPilihan.absen = Number((hadir / tidakHadir) * 100)
+                    }
+                    await nilai.save()
+
+                }
+            }
+        }
+
+        for (const siswaId of listSiswa) {
+            const siswa = await Siswa.findOne({
+                _id: siswaId,
+                kelas: kelas
+            })
+
+            const nilai = await Nilai.findById(siswa.nilai)
+
+            if (!siswa) {
+                throw new Error(`Siswa with ID ${siswaId} doesn't exist`)
+            }
+
+            // Update kehadiran ekstrakurikuler pilihan
+            if (ekstrakurikulerExist.wajib) {
+                nilai.ekstrakurikulerWajib.kehadiran[pertemuan] = true
+                let hadir = nilai.ekstrakurikulerWajib.kehadiran.filter(item => item === true).length
+                let tidakHadir = nilai.ekstrakurikulerWajib.kehadiran.filter(item => item === false).length
+                nilai.ekstrakurikulerWajib.absen = Number((hadir / tidakHadir) * 100)
+            } else {
+                nilai.ekstrakurikulerPilihan.kehadiran[pertemuan] = true
+                let hadir = nilai.ekstrakurikulerPilihan.kehadiran.filter(item => item === true).length
+                let tidakHadir = nilai.ekstrakurikulerPilihan.kehadiran.filter(item => item === false).length
+                nilai.ekstrakurikulerPilihan.absen = Number((hadir / tidakHadir) * 100)
+            }
+            await nilai.save()
+
+        }
+
+        // await session.commitTransaction()
+
+        return res.status(200).json({
+            success: true,
+            message: "Update kehadiran success",
+            data: null
+        })
+    } catch (error) {
+        await session.abortTransaction()
+
+        return res.status(500).json({
+            success: false,
+            message: error.message,
+            data: null
+        })
+    } finally {
+        // session.endSession()
+    }
+})
+
 
 module.exports = router;

@@ -15,6 +15,18 @@ const prestasiSchema = new mongoose.Schema({
         type: mongoose.Types.ObjectId,
         ref: "Ekstrakurikuler",
     },
+    kelas: {
+        type: mongoose.Types.ObjectId,
+        ref: "Kelas",
+    },
+    sertifikat: {
+        type: String,
+        default: null,
+    },
+    img: {
+        type: String,
+        default: null,
+    },
 });
 
 module.exports = mongoose.model("Prestasi", prestasiSchema);

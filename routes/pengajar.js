@@ -91,20 +91,13 @@ router.post("/ekstrakurikuler", async (req, res) => {
 // Get all ekstrakurikuler
 router.get("/ekstrakurikuler", async (req, res) => {
     try {
-        const ekstra = await Ekstrakurikuler.find({})
-            .populate("pengajar")
-            .populate({
-                path: "pendaftar",
-                populate: {
-                    path: "siswa",
-                },
-            })
-            .populate({
-                path: "pengajar",
-                populate: {
-                    path: "ekstrakurikuler",
-                },
-            });
+        const ekstra = await Ekstrakurikuler.find({}).populate({
+            path: 'pendaftar',
+            populate: [
+                { path: 'kelas' },
+                { path: 'nilai' }
+            ]
+        });
 
         return res.status(200).json({
             success: true,
@@ -119,6 +112,7 @@ router.get("/ekstrakurikuler", async (req, res) => {
         });
     }
 });
+
 
 // Get ekstrakurikuler by specific id
 router.get("/esktrakurikuler/:id", authPengajar, async (req, res) => {
@@ -166,9 +160,37 @@ router.delete("/ekstrakurikuler/:id", async (req, res) => {
     }
 });
 
+router.post("/delete", async (req, res) => {
+    const { niks } = req.body;
+
+    try {
+        // Menghapus data pengajar dengan menggunakan metode deleteMany() dari model Pengajar
+        const result = await Pengajar.deleteMany({ nik: niks });
+
+        console.log(result);
+
+        if (result.deletedCount > 0) {
+            res.status(200).json({
+                message: "Data pengajar berhasil dihapus",
+                status: "success",
+            });
+        } else {
+            res.status(404).json({
+                message: "Tidak ada data pengajar yang dihapus",
+                status: "not found",
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            message: "Terjadi kesalahan dalam menghapus data pengajar",
+            status: "error",
+        });
+    }
+});
+
 // Update Pengajar
 router.put("/:nik", async (req, res) => {
-    const nik = req.params.nik;
+    const nik = req.body.nik;
 
     try {
         const pengajar = await Pengajar.findOneAndUpdate({ nik: nik }, req.body, {

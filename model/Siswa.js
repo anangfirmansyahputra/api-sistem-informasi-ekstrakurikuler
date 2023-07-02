@@ -24,7 +24,14 @@ const siswaSchema = new mongoose.Schema({
     tgl: {
         type: String,
     },
-    nilai: [{ type: mongoose.Types.ObjectId, ref: "Nilai" }],
+    kelas: {
+        type: mongoose.Types.ObjectId,
+        ref: "Kelas",
+    },
+    nilai: {
+        type: mongoose.Types.ObjectId,
+        ref: "Nilai",
+    },
 });
 
 module.exports = mongoose.model("Siswa", siswaSchema);

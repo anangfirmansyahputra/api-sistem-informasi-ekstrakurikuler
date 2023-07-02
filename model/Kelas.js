@@ -5,6 +5,10 @@ const kelasSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    kelas: {
+        type: String,
+        required: true,
+    },
 });
 
 module.exports = mongoose.model("Kelas", kelasSchema);

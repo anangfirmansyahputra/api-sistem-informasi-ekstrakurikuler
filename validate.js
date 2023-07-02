@@ -17,7 +17,7 @@ const schemaLoginSiswa = Joi.object({
 
 const schemaPengajar = Joi.object({
     nama: Joi.string().required(),
-    nik: Joi.number().required().min(16),
+    nik: Joi.string().required(),
     password: Joi.string().required().min(6),
     mengajar: Joi.string(),
     alamat: Joi.string(),

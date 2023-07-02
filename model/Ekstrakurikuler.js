@@ -2,14 +2,14 @@ const mongoose = require("mongoose");
 const Siswa = require("./Siswa");
 
 const ekstrakurikulerSchema = new mongoose.Schema({
-    nama: {
+    name: {
         type: String,
         required: true,
     },
     pendaftar: [
         {
             type: mongoose.Schema.Types.ObjectId,
-            ref: "Nilai",
+            ref: "Siswa",
         },
     ],
     lokasi: {
@@ -17,6 +17,10 @@ const ekstrakurikulerSchema = new mongoose.Schema({
         required: true,
     },
     waktu: {
+        type: Array,
+        required: true,
+    },
+    hari: {
         type: String,
         required: true,
     },
@@ -35,6 +39,10 @@ const ekstrakurikulerSchema = new mongoose.Schema({
     kehadiran: {
         type: Number,
         default: 14,
+    },
+    pertemuan: {
+        type: Number,
+        default: 0,
     },
     pengajar: {
         type: mongoose.Schema.Types.ObjectId,

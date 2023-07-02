@@ -1,103 +1,131 @@
 const express = require("express");
 const router = express.Router();
-const multer = require("multer");
-const cloudinary = require("cloudinary").v2;
-const dotenv = require("dotenv");
 const Gallery = require("../model/Galery");
-const fs = require("fs");
 
-const upload = multer({ dest: "uploads/" });
-
-dotenv.config();
-
-// Konfigurasi Cloudinary (ganti dengan konfigurasi Anda sendiri)
-cloudinary.config({
-    cloud_name: process.env.CLOUD_NAME,
-    api_key: process.env.API_KEY,
-    api_secret: process.env.API_SECRET,
-    secure: true,
-});
-
-// Menampilkan semua galeri
+// Mendapatkan semua data galeri
 router.get("/", async (req, res) => {
     try {
-        const galleries = await Gallery.find();
-        res.json(galleries);
+        const galleries = await Gallery.find({}).populate("ekstrakurikuler");
+        res.json({
+            success: true,
+            data: galleries,
+            message: "Get data success",
+        });
     } catch (err) {
-        res.status(500).json({ message: err.message });
+        res.status(500).json({ success: false, data: null, message: err.message });
     }
 });
 
-// Menampilkan galeri berdasarkan ID
+// Mendapatkan data galeri berdasarkan ID
 router.get("/:id", getGallery, (req, res) => {
-    res.json(res.gallery);
+    res.json({
+        success: true,
+        data: res.gallery,
+        message: "Get data success",
+    });
 });
 
-router.post("/upload", upload.single("image"), async (req, res) => {
+// Membuat data galeri baru
+router.post("/", async (req, res) => {
+    const gallery = new Gallery({
+        ekstrakurikuler: req.body.ekstrakurikuler,
+        linkGallery: req.body.linkGallery,
+        description: req.body.description,
+    });
+
     try {
-        const file = req.file;
+        const newGallery = await gallery.save();
+        res.status(201).json({
+            success: true,
+            data: newGallery,
+            message: "Create data success",
+        });
+    } catch (err) {
+        res.status(400).json({ success: false, data: null, message: err.message });
+    }
+});
 
-        // Mengunggah gambar ke Cloudinary
-        const uploadResult = await cloudinary.uploader.upload(file.path);
+// Mengupdate data galeri berdasarkan ID
+router.put("/:id", getGallery, async (req, res) => {
+    try {
+        res.gallery.ekstrakurikuler = req.body.ekstrakurikuler;
+        res.gallery.linkGallery = req.body.linkGallery;
+        res.gallery.description = req.body.description;
 
-        fs.unlinkSync(file.path);
+        const updatedGallery = await res.gallery.save();
 
         res.json({
             success: true,
-            data: uploadResult,
-            message: "Gambar berhasil diunggah ke Cloudinary",
+            data: updatedGallery,
+            message: "Update gallery success",
+        });
+    } catch (err) {
+        res.status(400).json({
+            success: false,
+            data: null,
+            message: err.message,
+        });
+    }
+});
+
+// Menghapus data galeri berdasarkan ID
+router.delete("/:id", getGallery, async (req, res) => {
+    try {
+        await res.gallery.deleteOne();
+        res.json({
+            data: null,
+            success: true,
+            message: "Data galeri dihapus",
         });
     } catch (err) {
         res.status(500).json({
+            data: null,
             success: false,
             message: err.message,
-            data: null,
         });
     }
 });
 
-// Mengupdate galeri berdasarkan ID
-router.patch("/:id", getGallery, async (req, res) => {
-    if (req.body.idEkstrakurikuler != null) {
-        res.gallery.idEkstrakurikuler = req.body.idEkstrakurikuler;
-    }
-    if (req.body.tanggalUpload != null) {
-        res.gallery.tanggalUpload = req.body.tanggalUpload;
-    }
-    if (req.body.sertifikat != null) {
-        res.gallery.sertifikat = req.body.sertifikat;
-    }
+router.post("/delete", async (req, res) => {
+    const { ids } = req.body;
 
     try {
-        const updatedGallery = await res.gallery.save();
-        res.json(updatedGallery);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-});
+        // Menghapus data pengajar dengan menggunakan metode deleteMany() dari model Pengajar
+        const result = await Gallery.deleteMany({ _id: ids });
 
-// Menghapus galeri berdasarkan ID
-router.delete("/:id", getGallery, async (req, res) => {
-    try {
-        await res.gallery.remove();
-        res.json({ message: "Galeri dihapus" });
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
-// Middleware untuk mendapatkan galeri berdasarkan ID
-async function getGallery(req, res, next) {
-    try {
-        const gallery = await Gallery.findById(req.params.id);
-        if (gallery == null) {
-            return res.status(404).json({ message: "Galeri tidak ditemukan" });
+        if (result.deletedCount > 0) {
+            res.status(200).json({
+                message: "Data gallery berhasil dihapus",
+                status: "success",
+            });
+        } else {
+            res.status(404).json({
+                message: "Tidak ada data gallery yang dihapus",
+                status: "not found",
+            });
         }
-        res.gallery = gallery;
-        next();
-    } catch (err) {
-        return res.status(500).json({ message: err.message });
+    } catch (error) {
+        res.status(500).json({
+            message: "Terjadi kesalahan dalam menghapus data gallery",
+            status: "error",
+        });
     }
+});
+
+// Middleware untuk mendapatkan data galeri berdasarkan ID
+async function getGallery(req, res, next) {
+    let gallery;
+    try {
+        gallery = await Gallery.findById(req.params.id).populate("ekstrakurikuler");
+        if (gallery == null) {
+            return res.status(404).json({ success: false, data: null, message: "Data galeri tidak ditemukan" });
+        }
+    } catch (err) {
+        return res.status(500).json({ success: false, data: null, message: err.message });
+    }
+
+    res.gallery = gallery;
+    next();
 }
 
 module.exports = router;

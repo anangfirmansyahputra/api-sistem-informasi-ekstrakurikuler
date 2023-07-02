@@ -7,6 +7,8 @@ const siswaRoutes = require("./routes/siswa");
 const ekstraRoutes = require("./routes/ekstrakurikuler");
 const kelasRoutes = require("./routes/kelas");
 const nilaiRoutes = require("./routes/absensi");
+const prestasiRoutes = require("./routes/prestasi");
+const matpelRoutes = require('./routes/matpel')
 const cors = require("cors");
 const galleryRouter = require("./routes/gallery");
 const dotenv = require("dotenv");
@@ -28,6 +30,8 @@ app.use("/api/ekstrakurikuler", ekstraRoutes);
 app.use("/api/kelas", kelasRoutes);
 app.use("/api/nilai", nilaiRoutes);
 app.use("/api/gallery", galleryRouter);
+app.use("/api/prestasi", prestasiRoutes);
+app.use('/api/matpel', matpelRoutes)
 
 mongoose.connect(process.env.MONGO_URL).catch((error) => console.error(error));
 

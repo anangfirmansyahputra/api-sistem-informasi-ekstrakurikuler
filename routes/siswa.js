@@ -6,6 +6,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Ekstrakurikuler = require("../model/Ekstrakurikuler");
 const Prestasi = require("../model/Prestasi");
+const Nilai = require("../model/Nilai");
+const Kelas = require("../model/Kelas");
 
 // Login Siswa
 router.post("/login", async (req, res) => {
@@ -54,49 +56,110 @@ router.post("/login", async (req, res) => {
         role: siswa.role,
         accessToken: token,
         nilai: siswa.nilai,
+        kelas: siswa.kelas,
     });
 });
 
-// Mengambil semua data siswa
+// Get all
 router.get("/", async (req, res) => {
     try {
-        const siswa = await Siswa.find();
+        const siswa = await Siswa.find({}).populate("kelas nilai");
 
         return res.status(200).json({
             success: true,
-            message: "Berhasil mengambil data siswa",
+            message: "Get all siswa data success",
             data: siswa,
         });
     } catch (err) {
         return res.status(500).json({
             success: false,
-            message: "Gagal mengambil data siswa",
+            message: "Get all siswa data failed",
             data: null,
         });
     }
 });
 
-// Membuat siswa baru
+// Get by id
+router.get("/:id", async (req, res) => {
+    const idSiswa = req.params.id
+
+    try {
+        const siswa = await Siswa.findById(idSiswa)
+            .populate([
+                {
+                    path: 'nilai',
+                    populate: [
+                        { path: 'ekstrakurikulerPilihan.ekstrakurikuler', model: 'Ekstrakurikuler' },
+                        { path: 'ekstrakurikulerWajib.ekstrakurikuler', model: 'Ekstrakurikuler' }
+                    ]
+                },
+                { path: 'kelas' }
+            ]);
+
+        if (!siswa) {
+            return res.status(400).json({
+                success: false,
+                message: "Siswa not found!",
+                data: null,
+            });
+        }
+
+        return res.status(200).json({
+            success: true,
+            message: "Get siswa data success",
+            data: siswa,
+        });
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err || "Get siswa data failed",
+            data: null,
+        });
+    }
+});
+
+// Create
 router.post("/", async (req, res) => {
     try {
-        const { name, nis, password, alamat, tgl } = req.body;
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        const { name, nis, password, alamat, tgl, kelas } = req.body;
+        // const salt = await bcrypt.genSalt(10);
+        // const hashedPassword = await bcrypt.hash(password, salt);
+
+        const siswaExist = await Siswa.findOne({ nis: nis });
+        const kelasExist = await Kelas.findById(kelas);
+
+        if (siswaExist) {
+            throw Error("Siswa alredy registered");
+        }
+
+        if (!kelasExist) {
+            throw Error("Kelas not found");
+        }
+
+        const nilai = new Nilai({
+            nis: nis,
+        });
+        await nilai.save();
 
         const siswa = new Siswa({
             name,
             nis,
-            password: hashedPassword,
+            password,
+            // password: hashedPassword,
             alamat,
             tgl,
+            kelas,
+            nilai: nilai._id,
         });
 
         await siswa.save();
 
+        const { password: savedPassword, ...savedSiswa } = siswa;
+
         return res.status(201).json({
             success: true,
-            message: "Siswa berhasil dibuat",
-            data: siswa,
+            message: "Create siswa success",
+            data: savedSiswa,
         });
     } catch (err) {
         return res.status(400).json({
@@ -111,7 +174,13 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, nis, password, alamat, tgl } = req.body;
+        const { name, nis, password, alamat, tgl, kelas } = req.body;
+
+        const kelasExist = await Kelas.findById(kelas);
+
+        if (!kelasExist) {
+            throw Error("Kelas not found");
+        }
 
         const siswa = await Siswa.findByIdAndUpdate(
             id,
@@ -121,6 +190,7 @@ router.put("/:id", async (req, res) => {
                 password,
                 alamat,
                 tgl,
+                kelas,
             },
             { new: true }
         );
@@ -148,29 +218,36 @@ router.put("/:id", async (req, res) => {
 });
 
 // Menghapus data siswa
-router.delete("/:id", async (req, res) => {
+router.post("/delete", async (req, res) => {
+    const { nis } = req.body;
+
     try {
-        const { id } = req.params;
+        // Menghapus data siswa dengan menggunakan metode deleteMany() dari model Siswa
+        const result = await Siswa.deleteMany({ nis });
 
-        const siswa = await Siswa.findOneAndDelete({ nis: id });
+        if (result.deletedCount > 0) {
+            // Mengambil _id nilai siswa yang dihapus
+            const siswaId = result._id;
 
-        if (!siswa) {
-            return res.status(404).json({
+            // Menghapus data nilai siswa berdasarkan _id nilai
+            await Nilai.deleteMany({ nis: nis });
+
+            res.status(200).json({
+                message: "Hapus siswa berhasil",
+                success: true,
+                data: null,
+            });
+        } else {
+            res.status(404).json({
+                message: "Tidak ada data siswa yang dihapus",
                 success: false,
-                message: "Siswa tidak ditemukan",
                 data: null,
             });
         }
-
-        return res.status(200).json({
-            success: true,
-            message: "Siswa berhasil dihapus",
-            data: siswa,
-        });
-    } catch (err) {
-        return res.status(400).json({
+    } catch (error) {
+        res.status(500).json({
+            message: "Terjadi kesalahan saat menghapus data siswa",
             success: false,
-            message: err.message,
             data: null,
         });
     }
