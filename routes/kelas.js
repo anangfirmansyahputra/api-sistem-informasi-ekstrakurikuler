@@ -6,7 +6,10 @@ const Kelas = require("../model/Kelas");
 router.post("/", async (req, res) => {
     try {
         const { name, kelas } = req.body;
-        const savedKelas = new Kelas({ name, kelas });
+        const savedKelas = new Kelas({
+            kelas: kelas,
+            name: name
+        });
         await savedKelas.save();
         res.status(201).json({
             success: true,
@@ -21,7 +24,7 @@ router.post("/", async (req, res) => {
 // Read (all)
 router.get("/", async (req, res) => {
     try {
-        const kelas = await Kelas.find({});
+        const kelas = await Kelas.find({}).sort({ kelas: 1 }).exec();
         res.json({ success: true, data: kelas });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
@@ -84,5 +87,35 @@ router.post("/delete", async (req, res) => {
         });
     }
 });
+
+// Delete
+router.delete('/delete/:id', async (req, res) => {
+    try {
+        const kelas = await Kelas.findById(req.params.id)
+
+        if (kelas) {
+            await kelas.deleteOne()
+
+            return res.status(200).json({
+                message: "Data berhasil dihapus",
+                data: null,
+                success: true,
+            });
+        }
+
+        return res.status(404).json({
+            message: "Data tidak ditemukan",
+            data: null,
+            success: false,
+        });
+
+    } catch {
+        return res.status(500).json({
+            message: "Gagal, silahkan coba kembali",
+            data: null,
+            success: false,
+        });
+    }
+})
 
 module.exports = router;

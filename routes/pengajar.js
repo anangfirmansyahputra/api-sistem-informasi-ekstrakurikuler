@@ -95,9 +95,9 @@ router.get("/ekstrakurikuler", async (req, res) => {
             path: 'pendaftar',
             populate: [
                 { path: 'kelas' },
-                { path: 'nilai' }
+                { path: 'nilai' },
             ]
-        });
+        }).populate('pengajar');
 
         return res.status(200).json({
             success: true,

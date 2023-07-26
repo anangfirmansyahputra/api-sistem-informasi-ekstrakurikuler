@@ -11,22 +11,8 @@ const Kelas = require("../model/Kelas");
 
 // Login Siswa
 router.post("/login", async (req, res) => {
-    const { error } = schemaLoginSiswa.validate(req.body);
 
-    if (error) {
-        return res.status(400).json({
-            success: false,
-            message: error.details[0].message,
-            data: null,
-        });
-    }
-
-    const siswa = await Siswa.findOne({ nis: req.body.nis }).populate({
-        path: "ekstraku",
-        populate: {
-            path: "ekstrakurikuler",
-        },
-    });
+    const siswa = await Siswa.findOne({ nis: req.body.nis })
 
     if (!siswa) {
         return res.status(400).json({
@@ -35,9 +21,8 @@ router.post("/login", async (req, res) => {
             data: null,
         });
     }
-
-    const validPass = await bcrypt.compare(req.body.password, siswa.password);
-    if (!validPass) {
+    // const validPass = await bcrypt.compare(req.body.password, siswa.password);
+    if (siswa.password !== req.body.password) {
         return res.status(400).json({
             success: false,
             message: "Password salah!",
@@ -47,17 +32,57 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign({ _id: siswa._id }, process.env.ADMIN_SECRET);
 
-    return res.header("admin-token", token).status(200).json({
-        _id: siswa._id,
-        username: siswa.name,
-        nis: siswa.nis,
-        alamat: siswa.alamat,
-        tgl: siswa.tgl,
-        role: siswa.role,
-        accessToken: token,
-        nilai: siswa.nilai,
-        kelas: siswa.kelas,
+    return res.header("siswa-token", token).status(200).json({
+        token
     });
+});
+
+// Endpoint untuk mendapatkan data siswa berdasarkan token
+router.post('/me', async (req, res) => {
+    // const token = req.headers['siswa-token'];
+    const token = req.body.token
+
+    if (!token) {
+        return res.status(401).json({
+            success: false,
+            message: 'Token tidak ditemukan',
+            data: null,
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(token, process.env.ADMIN_SECRET);
+        const siswa = await Siswa.findById(decoded._id).populate('nilai').populate([
+            {
+                path: 'nilai',
+                populate: [
+                    { path: 'ekstrakurikulerPilihan.ekstrakurikuler', model: 'Ekstrakurikuler' },
+                    { path: 'ekstrakurikulerWajib.ekstrakurikuler', model: 'Ekstrakurikuler' }
+                ]
+            },
+            { path: 'kelas' }
+        ]);
+
+        if (!siswa) {
+            return res.status(404).json({
+                success: false,
+                message: 'Siswa tidak ditemukan',
+                data: null,
+            });
+        }
+
+        // Mengembalikan data siswa
+        return res.status(200).json({
+            success: true,
+            data: siswa,
+        });
+    } catch (error) {
+        return res.status(401).json({
+            success: false,
+            message: 'Token tidak valid',
+            data: null,
+        });
+    }
 });
 
 // Get all
@@ -121,7 +146,7 @@ router.get("/:id", async (req, res) => {
 // Create
 router.post("/", async (req, res) => {
     try {
-        const { name, nis, password, alamat, tgl, kelas } = req.body;
+        const { name, nis, password, alamat, tgl, kelas, bop, noTlp, gender } = req.body;
         // const salt = await bcrypt.genSalt(10);
         // const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -129,11 +154,19 @@ router.post("/", async (req, res) => {
         const kelasExist = await Kelas.findById(kelas);
 
         if (siswaExist) {
-            throw Error("Siswa alredy registered");
+            return res.status(404).json({
+                success: false,
+                message: "NIS sudah terdaftar",
+                data: null,
+            });
         }
 
         if (!kelasExist) {
-            throw Error("Kelas not found");
+            return res.status(404).json({
+                success: false,
+                message: "Kelas tidak ditemukan",
+                data: null,
+            });
         }
 
         const nilai = new Nilai({
@@ -150,11 +183,12 @@ router.post("/", async (req, res) => {
             tgl,
             kelas,
             nilai: nilai._id,
+            bop,
+            noTlp,
+            gender
         });
 
-        await siswa.save();
-
-        const { password: savedPassword, ...savedSiswa } = siswa;
+        const savedSiswa = await siswa.save();
 
         return res.status(201).json({
             success: true,
@@ -162,7 +196,7 @@ router.post("/", async (req, res) => {
             data: savedSiswa,
         });
     } catch (err) {
-        return res.status(400).json({
+        return res.status(500).json({
             success: false,
             message: err.message,
             data: null,

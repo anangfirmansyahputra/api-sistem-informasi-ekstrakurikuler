@@ -32,6 +32,15 @@ const siswaSchema = new mongoose.Schema({
         type: mongoose.Types.ObjectId,
         ref: "Nilai",
     },
+    noTlp: {
+        type: String,
+    },
+    gender: {
+        type: String
+    },
+    bop: {
+        type: String
+    }
 });
 
 module.exports = mongoose.model("Siswa", siswaSchema);
