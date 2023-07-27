@@ -205,27 +205,20 @@ router.post("/", async (req, res) => {
 });
 
 // Mengedit data siswa
-router.put("/:id", async (req, res) => {
+router.put("/:id/update", async (req, res) => {
     try {
         const { id } = req.params;
         const { name, nis, password, alamat, tgl, kelas } = req.body;
 
-        const kelasExist = await Kelas.findById(kelas);
+        // const kelasExist = await Kelas.findById(kelas);
 
-        if (!kelasExist) {
-            throw Error("Kelas not found");
-        }
+        // if (!kelasExist) {
+        //     throw Error("Kelas tidak ditemukan");
+        // }
 
         const siswa = await Siswa.findByIdAndUpdate(
             id,
-            {
-                name,
-                nis,
-                password,
-                alamat,
-                tgl,
-                kelas,
-            },
+            req.body,
             { new: true }
         );
 
@@ -413,5 +406,33 @@ router.delete("/prestasi/:id", async (req, res) => {
         res.status(500).json({ message: "Terjadi kesalahan saat menghapus data prestasi" });
     }
 });
+
+router.delete('/:id/delete', async (req, res) => {
+    const findSiswa = await Siswa.findById(req.params.id)
+    try {
+        if (findSiswa) {
+            await findSiswa.deleteOne()
+
+            return res.status(200).json({
+                success: true,
+                data: null,
+                message: "Data berhasil dihapus"
+            })
+        } else {
+            return res.status(404).json({
+                success: false,
+                data: null,
+                message: "Data tidak ditemukan berhasil dihapus"
+            })
+        }
+    } catch (err) {
+        return res.status(500).json({
+            success: true,
+            data: null,
+            message: "Server sedang bermasalah, silahkan coba kembali"
+        })
+
+    }
+})
 
 module.exports = router;

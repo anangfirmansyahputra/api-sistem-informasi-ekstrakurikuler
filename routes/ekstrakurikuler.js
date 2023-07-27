@@ -320,5 +320,32 @@ router.post('/absensi', async (req, res) => {
     }
 })
 
+// Find by id
+router.get('/:id', async (req, res) => {
+    try {
+        const findEkstrakurikuler = await Ekstrakurikuler.findById(req.params.id).populate('pendaftar')
+
+        if (!findEkstrakurikuler) {
+            return res.status(404).json({
+                data: null,
+                success: false,
+                message: "Ekstrakurikuler tidak ditemukan"
+            })
+        }
+
+        return res.status(200).json({
+            data: findEkstrakurikuler,
+            message: "Data berhasil didapat",
+            success: true
+        })
+
+    } catch (err) {
+        return res.status(500).json({
+            data: null,
+            message: "Server sedang bermasalah, silahkan coba kembali",
+            success: false
+        })
+    }
+})
 
 module.exports = router;
