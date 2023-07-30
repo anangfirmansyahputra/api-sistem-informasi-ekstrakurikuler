@@ -5,12 +5,16 @@ const Gallery = require("../model/Galery");
 // Mendapatkan semua data galeri
 router.get("/", async (req, res) => {
     try {
+
         const galleries = await Gallery.find({}).populate("ekstrakurikuler");
+
         res.json({
             success: true,
             data: galleries,
             message: "Get data success",
         });
+
+
     } catch (err) {
         res.status(500).json({ success: false, data: null, message: err.message });
     }

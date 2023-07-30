@@ -6,10 +6,18 @@ const gallerySchema = new mongoose.Schema({
         type: mongoose.Types.ObjectId,
         ref: "Ekstrakurikuler",
     },
-    tanggalUpload: {
+    uploadDate: {
         type: Date,
         default: Date.now,
     },
+    // endDate: {
+    //     type: String,
+    //     required: true
+    // },
+    // for: {
+    //     type: Array,
+    //     // enum: ['siswa', 'pengajar'],
+    // },
     linkGallery: {
         type: String,
         required: true,
@@ -18,6 +26,9 @@ const gallerySchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    // all: {
+    //     type: Boolean,
+    // }
 });
 
 module.exports = mongoose.model("Gallery", gallerySchema);
