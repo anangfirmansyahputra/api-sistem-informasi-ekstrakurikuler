@@ -9,15 +9,15 @@ const { authAdmin } = require("../verifyToken");
 const Ekstrakurikuler = require("../model/Ekstrakurikuler");
 // Create admin
 router.post("/register", async (req, res) => {
-    const { error } = schemaRegister.validate(req.body);
+    // const { error } = schemaRegister.validate(req.body);
 
-    if (error) {
-        return res.status(400).json({
-            success: false,
-            message: error.details[0].message,
-            data: null,
-        });
-    }
+    // if (error) {
+    //     return res.status(400).json({
+    //         success: false,
+    //         message: error.details[0].message,
+    //         data: null,
+    //     });
+    // }
 
     const alredyAdmin = await Admin.findOne({ username: req.body.username });
 
@@ -29,12 +29,12 @@ router.post("/register", async (req, res) => {
         });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(req.body.password, salt);
+    // const salt = await bcrypt.genSalt(10);
+    // const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
     const admin = new Admin({
         username: req.body.username,
-        password: hashedPassword,
+        password: req.body.password,
     });
 
     try {
@@ -58,15 +58,15 @@ router.post("/register", async (req, res) => {
 
 // Login
 router.post("/login", async (req, res) => {
-    const { error } = schemaLogin.validate(req.body);
+    // const { error } = schemaLogin.validate(req.body);
 
-    if (error) {
-        return res.status(400).json({
-            success: false,
-            message: error.details[0].message,
-            data: null,
-        });
-    }
+    // if (error) {
+    //     return res.status(400).json({
+    //         success: false,
+    //         message: error.details[0].message,
+    //         data: null,
+    //     });
+    // }
 
     const admin = await Admin.findOne({ username: req.body.username });
 
@@ -78,8 +78,8 @@ router.post("/login", async (req, res) => {
         });
     }
 
-    const validPass = await bcrypt.compare(req.body.password, admin.password);
-    if (!validPass) {
+    // const validPass = await bcrypt.compare(req.body.password, admin.password);
+    if (admin.password !== req.body.password) {
         return res.status(400).json({
             success: false,
             message: "Password salah!",
@@ -102,15 +102,15 @@ router.post("/login", async (req, res) => {
 });
 
 // Create pengajar
-router.post("/buat-pengajar", authAdmin, async (req, res) => {
-    const { error } = schemaPengajar.validate(req.body);
-    if (error) {
-        return res.status(400).json({
-            success: false,
-            message: error.details[0].message,
-            data: null,
-        });
-    }
+router.post("/buat-pengajar", async (req, res) => {
+    // const { error } = schemaPengajar.validate(req.body);
+    // if (error) {
+    //     return res.status(400).json({
+    //         success: false,
+    //         message: error.details[0].message,
+    //         data: null,
+    //     });
+    // }
 
     const alredyPengajar = await Pengajar.findOne({ nik: req.body.nik });
     if (alredyPengajar) {
@@ -121,13 +121,13 @@ router.post("/buat-pengajar", authAdmin, async (req, res) => {
         });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(req.body.password, salt);
+    // const salt = await bcrypt.genSalt(10);
+    // const hashedPassword = await bcrypt.hash(req.body.password, salt);
 
     const pengajar = new Pengajar({
         nama: req.body.nama,
         nik: req.body.nik,
-        password: hashedPassword,
+        // password: hashedPassword,
         ...req.body,
     });
 
@@ -177,6 +177,32 @@ router.get("/pengajar", async (req, res) => {
     }
 });
 
+router.get("/pengajar/:id", async (req, res) => {
+    try {
+        const pengajar = await Pengajar.findById(req.params.id).populate("ekstrakurikuler");
+
+        if (pengajar) {
+            return res.status(200).json({
+                success: true,
+                message: "Success get all pengajar",
+                data: pengajar,
+            });
+        } else {
+            return res.status(200).json({
+                success: true,
+                message: "No pengajar found",
+                data: null,
+            });
+        }
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+            data: null,
+        });
+    }
+});
+
 // Delete pengajar
 router.put("/pengajar", async (req, res) => {
     const idPengajar = req.body.listId;
@@ -188,6 +214,38 @@ router.put("/pengajar", async (req, res) => {
         message: "Data berhasil dihapus",
     });
 });
+
+router.delete('/pengajar/delete/:id', async (req, res) => {
+    const pengajar = await Pengajar.findById(req.params.id)
+
+    try {
+        if (pengajar) {
+            await pengajar.deleteOne()
+
+            return res.status(200).json({
+                success: true,
+                message: "Data berhasil dihapus",
+                data: null
+            });
+        } else {
+            return res.status(404).json({
+                success: false,
+                message: "Data tidak ditemukan",
+                data: null
+            });
+        }
+
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err,
+            data: null
+        });
+    }
+
+
+
+})
 
 // Approve Ektrakurikuler
 router.put("/ekstrakurikuler/approve/:id", async (req, res) => {

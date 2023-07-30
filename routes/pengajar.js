@@ -189,11 +189,11 @@ router.post("/delete", async (req, res) => {
 });
 
 // Update Pengajar
-router.put("/:nik", async (req, res) => {
-    const nik = req.body.nik;
+router.put("/:id", async (req, res) => {
+    // const nik = req.body.nik;
 
     try {
-        const pengajar = await Pengajar.findOneAndUpdate({ nik: nik }, req.body, {
+        const pengajar = await Pengajar.findOneAndUpdate({ _id: req.params.id }, req.body, {
             new: true, // Mengembalikan data yang sudah diperbarui
             runValidators: true, // Menjalankan validasi model saat melakukan pembaruan
         });
