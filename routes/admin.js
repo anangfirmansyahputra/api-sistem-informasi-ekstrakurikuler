@@ -153,7 +153,7 @@ router.post("/buat-pengajar", async (req, res) => {
 // Get all pengajar
 router.get("/pengajar", async (req, res) => {
     try {
-        const pengajar = await Pengajar.find({}).populate("ekstrakurikuler");
+        const pengajar = await Pengajar.find({}).populate(['ekstrakurikuler', 'mengajar']);
 
         if (pengajar.length > 0) {
             return res.status(200).json({
@@ -176,6 +176,7 @@ router.get("/pengajar", async (req, res) => {
         });
     }
 });
+
 
 router.get("/pengajar/:id", async (req, res) => {
     try {

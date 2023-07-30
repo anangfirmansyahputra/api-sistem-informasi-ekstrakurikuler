@@ -17,7 +17,6 @@ const pengajarSchema = new mongoose.Schema({
     mengajar: {
         type: mongoose.Types.ObjectId,
         ref: "Matpel",
-        default: null
     },
     ekstrakurikuler: [{ type: mongoose.Types.ObjectId, ref: "Ekstrakurikuler", default: [] }],
     alamat: {
