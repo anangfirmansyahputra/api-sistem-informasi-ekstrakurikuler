@@ -249,7 +249,7 @@ router.post('/absensi', async (req, res) => {
             if (!listSiswa.includes(siswaId)) {
                 const siswa = await Siswa.findOne({
                     _id: siswaId,
-                    kelas: kelas
+                    // kelas: kelas
                 })
 
                 if (siswa) {
@@ -275,7 +275,7 @@ router.post('/absensi', async (req, res) => {
         for (const siswaId of listSiswa) {
             const siswa = await Siswa.findOne({
                 _id: siswaId,
-                kelas: kelas
+                // kelas: kelas
             })
 
             const nilai = await Nilai.findById(siswa.nilai)
@@ -323,29 +323,38 @@ router.post('/absensi', async (req, res) => {
 // Find by id
 router.get('/:id', async (req, res) => {
     try {
-        const findEkstrakurikuler = await Ekstrakurikuler.findById(req.params.id).populate('pendaftar')
+        const findEkstrakurikuler = await Ekstrakurikuler.findById(req.params.id).populate({
+            path: 'pendaftar',
+            populate: [
+                { path: 'kelas' },
+                { path: 'nilai' },
+            ]
+        }).populate('pengajar');
 
         if (!findEkstrakurikuler) {
+            // If Ekstrakurikuler is not found, return a 404 Not Found response.
             return res.status(404).json({
                 data: null,
                 success: false,
                 message: "Ekstrakurikuler tidak ditemukan"
-            })
+            });
         }
 
+        // If Ekstrakurikuler is found, return a 200 OK response with the data.
         return res.status(200).json({
             data: findEkstrakurikuler,
             message: "Data berhasil didapat",
             success: true
-        })
+        });
 
     } catch (err) {
+        // If there's an error (e.g., database connection error), return a 500 Internal Server Error response.
         return res.status(500).json({
             data: null,
-            message: "Server sedang bermasalah, silahkan coba kembali",
+            message: err.message, // Display the error message instead of the entire error object.
             success: false
-        })
+        });
     }
-})
+});
 
 module.exports = router;
