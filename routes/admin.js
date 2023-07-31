@@ -284,7 +284,8 @@ router.post("/pengumuman", async (req, res) => {
             title: data.title,
             content: data.content,
             timeEnd: data.timeEnd,
-            timeStart: data.timeStart,
+            for: data.for
+            // timeStart: data.timeStart,
         });
 
         const savedPengumuman = await pengumuman.save();
@@ -302,6 +303,84 @@ router.post("/pengumuman", async (req, res) => {
         });
     }
 });
+
+// Get pengumuman by id
+router.get('/pengumuman/:id', async (req, res) => {
+    try {
+        const findPengumuman = await Pengumuman.findById(req.params.id)
+        if (findPengumuman) {
+            return res.status(200).json({
+                data: findPengumuman,
+                message: "Data berhasil didapatkan",
+                success: true
+            })
+        } else {
+            throw new Error('Data tidak ditemukan')
+        }
+
+    } catch (err) {
+        return res.status(500).json({
+            data: null,
+            message: err,
+            success: false
+        })
+    }
+})
+
+// Delete by id
+router.delete('/pengumuman/:id', async (req, res) => {
+    try {
+        const findPengumuman = await Pengumuman.findById(req.params.id)
+        if (findPengumuman) {
+            await findPengumuman.deleteOne()
+
+            return res.status(200).json({
+                data: null,
+                message: "Data berhasil dihapus",
+                success: true
+            })
+        } else {
+            throw new Error('Data tidak ditemukan')
+        }
+
+    } catch (err) {
+        return res.status(500).json({
+            data: null,
+            message: err,
+            success: false
+        })
+    }
+})
+
+// Update
+router.put('/pengumuman/:id', async (req, res) => {
+    try {
+        const findPengumuman = await Pengumuman.findById(req.params.id)
+        if (findPengumuman) {
+            findPengumuman.title = req.body.title
+            findPengumuman.content = req.body.content
+            findPengumuman.timeEnd = req.body.timeEnd
+            findPengumuman.for = req.body.for
+
+            const updatePengumuman = await findPengumuman.save()
+
+            return res.status(200).json({
+                data: updatePengumuman,
+                message: "Data berhasil diperbarui",
+                success: true
+            })
+        } else {
+            throw new Error('Data tidak ditemukan')
+        }
+
+    } catch (err) {
+        return res.status(500).json({
+            data: null,
+            message: err,
+            success: false
+        })
+    }
+})
 
 // Get all pengumuman
 router.get("/pengumuman", async (req, res) => {

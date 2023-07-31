@@ -19,7 +19,7 @@ const pengumumanSchema = new mongoose.Schema({
     },
     timeStart: {
         type: String,
-        required: true,
+        // required: true,
     },
 });
 
