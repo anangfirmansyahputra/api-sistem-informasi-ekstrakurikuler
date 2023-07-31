@@ -357,4 +357,48 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+router.post('/nilai/:id', async (req, res) => {
+    try {
+        const findSiswa = await Siswa.findById(req.params.id);
+
+        if (findSiswa) {
+            const id = findSiswa.nilai;
+            const findNilai = await Nilai.findById(id);
+
+            if (findNilai) {
+                const nilai = findNilai[req.body.wajib ? "ekstrakurikulerWajib" : "ekstrakurikulerPilihan"];
+                nilai.nilai = req.body.nilai;
+
+                await findNilai.save()
+
+                return res.status(200).json({
+                    data: nilai,
+                    message: 'Data berhasil dirubah',
+                    success: true
+                });
+            } else {
+                return res.status(404).json({
+                    data: null,
+                    message: 'Nilai not found',
+                    success: false
+                });
+            }
+        } else {
+            return res.status(404).json({
+                data: null,
+                message: 'Siswa not found',
+                success: false
+            });
+        }
+
+    } catch (err) {
+        return res.status(500).json({
+            data: null,
+            message: err.message,
+            success: false
+        });
+    }
+});
+
+
 module.exports = router;
