@@ -383,15 +383,26 @@ router.put('/pengumuman/:id', async (req, res) => {
 })
 
 // Get all pengumuman
-router.get("/pengumuman", async (req, res) => {
-    try {
-        const pengumuman = await Pengumuman.find({});
+router.post("/pengumuman/all", async (req, res) => {
+    const role = req.body.role
 
-        res.status(200).json({
-            success: true,
-            message: "Get pengumuman berhasil",
-            data: pengumuman,
-        });
+    try {
+        if (role) {
+            const pengumuman = await Pengumuman.find({ for: role })
+            res.status(200).json({
+                success: true,
+                message: "Get pengumuman berhasil",
+                data: pengumuman,
+            });
+        } else {
+            const pengumuman = await Pengumuman.find({});
+            res.status(200).json({
+                success: true,
+                message: "Get pengumuman berhasil",
+                data: pengumuman,
+            });
+        }
+
     } catch (err) {
         res.status(400).json({
             success: false,

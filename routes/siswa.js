@@ -88,7 +88,8 @@ router.post('/me', async (req, res) => {
 // Get all
 router.get("/", async (req, res) => {
     try {
-        const siswa = await Siswa.find({}).populate("kelas nilai");
+        // const siswa = await Siswa.find({}).populate("kelas nilai");
+        const siswa = await Siswa.find({}).populate("kelas nilai").sort({ "kelas.kelas": 1 });
 
         return res.status(200).json({
             success: true,
