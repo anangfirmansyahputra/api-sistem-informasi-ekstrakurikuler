@@ -8,16 +8,16 @@ const jwt = require("jsonwebtoken");
 
 // Login pengajar
 router.post("/login", async (req, res) => {
-    const { error } = schemaPengajar.validate(req.body);
-    if (error) {
-        return res.status(400).json({
-            success: false,
-            message: error.details[0].message,
-            data: null,
-        });
-    }
+    // const { error } = schemaPengajar.validate(req.body);
+    // if (error) {
+    //     return res.status(400).json({
+    //         success: false,
+    //         message: error.details[0].message,
+    //         data: null,
+    //     });
+    // }
 
-    const pengajar = await Pengajar.findOne({ nik: req.body.nik });
+    const pengajar = await Pengajar.findOne({ nik: req.body.nik }).populate('ekstrakurikuler').populate('mengajar');
     if (!pengajar) {
         return res.status(400).json({
             success: false,
@@ -26,7 +26,9 @@ router.post("/login", async (req, res) => {
         });
     }
 
-    const validPass = await bcrypt.compare(req.body.password, pengajar.password);
+    // const validPass = await bcrypt.compare(req.body.password, pengajar.password);
+    const validPass = pengajar.password === req.body.password
+
     if (!validPass) {
         return res.status(400).json({
             success: false,
@@ -43,10 +45,45 @@ router.post("/login", async (req, res) => {
             success: true,
             message: "Log in success",
             data: {
-                token: token,
+                // token: token,
+                ...pengajar['_doc']
             },
         });
 });
+
+router.post('/update', async (req, res) => {
+    try {
+        const { alamat, tgl, noTelp, nik } = req.body
+
+        const pengajar = await Pengajar.findOne({ nik });
+        if (!pengajar) {
+            return res.status(400).json({
+                success: false,
+                message: "User not found",
+                data: null,
+            });
+        }
+
+        pengajar.alamat = alamat || pengajar.alamat
+        pengajar.tgl = tgl || pengajar.tgl
+        pengajar.noTelp = noTelp || pengajar.noTelp
+
+        const savedPengajar = await pengajar.save()
+
+        return res.status(200).json({
+            success: true,
+            message: "Update biodata success",
+            data: savedPengajar,
+        });
+
+    } catch (err) {
+        return res.status(500).json({
+            success: false,
+            message: err.message,
+            data: null,
+        });
+    }
+})
 
 // Create ekstrakurikuler
 router.post("/ekstrakurikuler", async (req, res) => {
