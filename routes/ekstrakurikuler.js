@@ -207,7 +207,7 @@ router.post("/join/approve", async (req, res) => {
     session.startTransaction();
 
     try {
-        const { nis, ekstraId } = req.body;
+        const { nis, ekstraId, } = req.body;
 
         // Cari siswa berdasarkan ID
         const siswa = await Siswa.findOne({ nis }).session(session);
@@ -265,6 +265,8 @@ router.post("/join/approve", async (req, res) => {
         res.status(500).json({ message: "Terjadi kesalahan server" });
     }
 });
+
+
 
 
 router.post("/delete", async (req, res) => {

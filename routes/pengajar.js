@@ -134,7 +134,13 @@ router.get("/ekstrakurikuler", async (req, res) => {
                 { path: 'kelas' },
                 { path: 'nilai' },
             ]
-        }).populate('pengajar');
+        }).populate('pengajar').populate({
+            path: 'antrian',
+            populate: [
+                { path: 'kelas' },
+                { path: 'nilai' },
+            ]
+        });
 
         return res.status(200).json({
             success: true,
