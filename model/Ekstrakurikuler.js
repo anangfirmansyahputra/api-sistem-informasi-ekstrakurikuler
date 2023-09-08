@@ -52,6 +52,12 @@ const ekstrakurikulerSchema = new mongoose.Schema({
     note: {
         type: String,
     },
+    antrian: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "Siswa",
+        },
+    ],
 });
 
 module.exports = mongoose.model("Ekstrakurikuler", ekstrakurikulerSchema);
