@@ -158,6 +158,7 @@ router.put("/:id", upload.array("images", 2), async (req, res) => {
         const { ekstrakurikuler, siswa, kelas, tgl, deskripsi } = req.body;
         const prestasi = await Prestasi.findById(req.params.id);
 
+
         if (!prestasi) {
             return res.status(404).json({
                 success: false,
@@ -174,15 +175,17 @@ router.put("/:id", upload.array("images", 2), async (req, res) => {
                 overwrite: true,
             };
 
-            const resultImg = await cloudinary.uploader.upload(req.files[0].path, option);
-            const resultSertifikat = await cloudinary.uploader.upload(req.files[1].path, option);
+            if (req.files[1]) {
+                const resultImg = await cloudinary.uploader.upload(req.files[1].path, option);
+                fs.unlinkSync(req.files[1].path);
+                prestasi.img = resultImg.secure_url;
+            }
 
-            // Hapus file di lokal setelah diupload ke Cloudinary
-            fs.unlinkSync(req.files[0].path);
-            fs.unlinkSync(req.files[1].path);
-
-            prestasi.sertifikat = resultSertifikat.secure_url;
-            prestasi.img = resultImg.secure_url;
+            if (req.files[0]) {
+                const resultSertifikat = await cloudinary.uploader.upload(req.files[0].path, option);
+                fs.unlinkSync(req.files[0].path);
+                prestasi.sertifikat = resultSertifikat.secure_url;
+            }
         }
 
         // Memperbarui atribut yang dikirimkan oleh pengguna
