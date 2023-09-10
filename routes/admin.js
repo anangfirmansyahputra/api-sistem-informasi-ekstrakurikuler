@@ -389,10 +389,11 @@ router.post("/pengumuman/all", async (req, res) => {
     try {
         if (role) {
             const pengumuman = await Pengumuman.find({ for: role })
+            const pengumumanAll = await Pengumuman.find({ for: "semua" })
             res.status(200).json({
                 success: true,
                 message: "Get pengumuman berhasil",
-                data: pengumuman,
+                data: [...pengumuman, ...pengumumanAll],
             });
         } else {
             const pengumuman = await Pengumuman.find({});
