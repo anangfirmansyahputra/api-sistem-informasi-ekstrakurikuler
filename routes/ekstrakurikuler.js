@@ -148,6 +148,7 @@ router.post("/join", async (req, res) => {
         // Cari siswa berdasarkan ID
         const siswa = await Siswa.findOne({ nis }).session(session);
 
+
         if (!siswa) {
             return res.status(400).json({
                 message: "Siswa tidak ditemukan",
@@ -157,7 +158,7 @@ router.post("/join", async (req, res) => {
         }
 
         // Cari ekstrakurikuler berdasarkan ID
-        const ekstrakurikuler = await Ekstrakurikuler.findById(ekstraId).session(session);
+        const ekstrakurikuler = await Ekstrakurikuler.findById(ekstraId)
         if (!ekstrakurikuler) {
             return res.status(400).json({
                 message: "Ekstrakurikuler tidak ditemukan",
@@ -184,8 +185,13 @@ router.post("/join", async (req, res) => {
         //     await nilai.save();
         // }
 
+
+
         ekstrakurikuler.antrian.push(siswa._id);
         await ekstrakurikuler.save();
+
+        siswa[ekstrakurikuler.wajib ? "alredyWajib" : "alredyPilihan"] = true
+        await siswa.save();
 
         await session.commitTransaction();
         session.endSession();
@@ -252,11 +258,81 @@ router.post("/join/approve", async (req, res) => {
         ekstrakurikuler.pendaftar.push(siswa._id);
         await ekstrakurikuler.save();
 
+        siswa[ekstrakurikuler.wajib ? "alredyWajib" : "alredyPilihan"] = false
+        await siswa.save()
+
         await session.commitTransaction();
         session.endSession();
 
         res.status(201).json({
-            message: "Ekstrakurikuler berhasil ditambahkan ke Siswa",
+            message: "Siswa berhasil bergabung",
+        });
+    } catch (err) {
+        await session.abortTransaction();
+        session.endSession();
+        console.log(err)
+        res.status(500).json({ message: "Terjadi kesalahan server" });
+    }
+});
+
+// Tolak
+router.post("/join/disapprove", async (req, res) => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+        const { nis, ekstraId, } = req.body;
+
+        // Cari siswa berdasarkan ID
+        const siswa = await Siswa.findOne({ nis }).session(session);
+
+        if (!siswa) {
+            return res.status(400).json({
+                message: "Siswa tidak ditemukan",
+                data: null,
+                success: false,
+            });
+        }
+
+        // Cari ekstrakurikuler berdasarkan ID
+        const ekstrakurikuler = await Ekstrakurikuler.findById(ekstraId).session(session);
+        if (!ekstrakurikuler) {
+            return res.status(400).json({
+                message: "Ekstrakurikuler tidak ditemukan",
+                data: null,
+                success: false,
+            });
+        }
+
+        const nilai = await Nilai.findById(siswa.nilai).session(session)
+
+        if (!nilai) {
+            return res.status(400).json({
+                message: "Nilai not found!",
+                data: null,
+                success: false,
+            });
+        }
+
+        // if (ekstrakurikuler.wajib) {
+        //     nilai.ekstrakurikulerWajib.ekstrakurikuler = ekstraId;
+        //     await nilai.save();
+        // } else {
+        //     nilai.ekstrakurikulerPilihan.ekstrakurikuler = ekstraId;
+        //     await nilai.save();
+        // }
+
+        ekstrakurikuler.antrian = ekstrakurikuler.antrian.filter(siswaId => siswaId.toString() !== siswa._id.toString());
+        await ekstrakurikuler.save();
+
+        siswa[ekstrakurikuler.wajib ? "alredyWajib" : "alredyPilihan"] = false
+        await siswa.save()
+
+        await session.commitTransaction();
+        session.endSession();
+
+        res.status(201).json({
+            message: "Siswa berhasil ditolak",
         });
     } catch (err) {
         await session.abortTransaction();

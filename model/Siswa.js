@@ -40,6 +40,14 @@ const siswaSchema = new mongoose.Schema({
     },
     bop: {
         type: String
+    },
+    alredyWajib: {
+        type: Boolean,
+        default: false
+    },
+    alredyPilihan: {
+        type: Boolean,
+        default: false
     }
 });
 
