@@ -113,7 +113,41 @@ router.put("/:id", async (req, res) => {
         }
 
         // Update properti ekstrakurikuler
+
+
+        if (updatedEkstra.pengajar) {
+            const pengajar = await Pengajar.findById(updatedEkstra.pengajar)
+
+            if (!pengajar) {
+                throw new Error('Data pengajar tidak ditemukan')
+            }
+
+            console.log(existingEkstra._id);
+
+            const deleteEkstra = await Pengajar.findByIdAndUpdate(existingEkstra.pengajar, { $pull: { ekstrakurikuler: existingEkstra._id } }, { new: true })
+
+            console.log(deleteEkstra);
+
+            const addEkstra = await Pengajar.findByIdAndUpdate(updatedEkstra.pengajar, { $push: { ekstrakurikuler: existingEkstra._id } }, { new: true })
+
+            // Pengajar.updateOne(
+            //     { _id: updatedEkstra.pengajar }, // Gantilah dengan kriteria pencarian yang sesuai
+            //     { $push: { mengajar: existingEkstra._id } },
+            //     (error, result) => {
+            //         if (error) {
+            //             throw new Error('Pengajar tidak ditemukan')
+            //         } else {
+            //             console.log('String berhasil dihapus dari array dalam dokumen.');
+            //         }
+            //     }
+            // );
+
+            await deleteEkstra.save()
+            await addEkstra.save()
+        }
+
         existingEkstra.name = updatedEkstra.name || existingEkstra.name;
+        existingEkstra.pengajar = updatedEkstra.pengajar || existingEkstra.pengajar;
         existingEkstra.lokasi = updatedEkstra.lokasi || existingEkstra.lokasi;
         existingEkstra.waktu = updatedEkstra.waktu || existingEkstra.waktu;
         existingEkstra.wajib = updatedEkstra.wajib;
